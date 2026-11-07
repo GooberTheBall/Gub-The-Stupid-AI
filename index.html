@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Gub, The Stupid AI</title>
+</head>
+<body>
+    <h3>Gub, The Stupid AI</h3>
+    <h4>Generates text and talks!!</h4>
+
+    <p>Output</p>
+    <div class="txt-box">
+        <textarea id="txt-output" placeholder="Output goes here!" readonly></textarea>
+    </div>
+
+    <p>Settings:</p>
+    <label for="max-words">Max Words</label>
+    <div>
+        <input type="range" id="max-words-range" name="max-words" min="5" max="500" step="5" default value="5" />
+    </div>
+    <p id="max-word-count">5</p>
+
+    <button id="generate-btn">Generate</button>
+
+    <p>API:</p>
+    <span>GET: "/generate/?maxwords=NUM"</span>
+    <br>
+    <span>Returns: Generated string output, size depending on the sentence and maxwords number</span>
+
+    <style>
+        .txt-box #txt-output {
+            resize: none;
+            width: 500px;
+            height: 200px;
+            align-items: center;
+            text-align : center;
+        }
+    </style>
+
+    <script>
+        const max_word_count = document.getElementById("max-word-count");
+        const max_word_range = document.getElementById("max-words-range");
+        const the_fucking_button = document.getElementById("generate-btn");
+        let MAX_WORDS = 5;
+
+        max_word_range.addEventListener("change", (event) => {
+            max_word_count.textContent = `${max_word_range.value}`;
+            MAX_WORDS = max_word_range.value;
+        });
+
+        function capitalizeFirstLetter(val) {
+            return String(val).charAt(0).toUpperCase() + String(val).slice(1);
+        }
+
+        async function makeMarkov(url) {
+            const text = await (await fetch(url)).text();
+            const words = text.toLowerCase().match(/[\w']+[.!?]?/g) ?? [];
+            const chain = Object.create(null);
+            const starts = [];
+            
+            for (let i = 0; i < words.length - 1; i++) {
+                const currentWord = words[i];
+                const nextWord = words[i + 1];
+                
+                (chain[currentWord] ??= []).push(nextWord);
+                
+                if (i === 0 || /[.!?]$/.test(currentWord)) {
+                    starts.push(nextWord);
+                }
+            }
+            
+            return function generate(maxWords = 200) {
+                const startList = starts.length > 0 ? starts : Object.keys(chain);
+                let w = startList[Math.floor(Math.random() * startList.length)];
+                const out = [capitalizeFirstLetter(w)];
+
+                const hardCap = maxWords * 4;
+
+                while (out.length < hardCap) {
+                    if (/[.!?]$/.test(w)) {
+                        if (out.length >= maxWords) break;
+
+                        w = startList[Math.floor(Math.random() * startList.length)];
+                        out.push(capitalizeFirstLetter(w));
+                        continue;
+                    }
+
+                    const next = chain[w];
+                    if (!next || next.length === 0) break;
+
+                    w = next[Math.floor(Math.random() * next.length)];
+                    out.push(w);
+                }
+
+                return out.join(" ");
+            };
+        }
+
+        async function generate_txt_ai(max_words) {
+            const generate = await makeMarkov("words.txt");
+            document.getElementById("txt-output").textContent = generate(max_words);
+        }
+
+        the_fucking_button.addEventListener('click', () => {
+            generate_txt_ai(MAX_WORDS-1);
+        })
+
+    </script>
+</body>
+</html>

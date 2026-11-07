@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title></title></head>
+<body>
+  <script>
+    const raw = new URLSearchParams(location.search).get("maxwords");
+    const parsed = parseInt(raw, 10);
+    const n = Number.isFinite(parsed) ? Math.max(5, Math.min(500, parsed)) : 150;
+
+    location.replace(`../api.html?maxwords=${n}`);
+  </script>
+</body>
+</html>
